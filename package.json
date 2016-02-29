@@ -1,0 +1,45 @@
+{
+  "name": "loveboat",
+  "version": "0.0.0",
+  "description": "the hapi route config preprocessor",
+  "main": "lib/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "lab -a code -t 100 -L",
+    "coveralls": "lab -r lcov | coveralls"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devinivy/loveboat.git"
+  },
+  "keywords": [
+    "hapi",
+    "plugins",
+    "utility",
+    "preprocessor",
+    "route",
+    "routes"
+  ],
+  "author": "Devin Ivy <devin@bigroomstudios.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/devinivy/loveboat/issues"
+  },
+  "homepage": "https://github.com/devinivy/loveboat#readme",
+  "dependencies": {
+    "hoek": "3.x.x",
+    "joi": "8.x.x",
+    "topo": "2.x.x"
+  },
+  "peerDependencies": {
+    "hapi": ">=10 <14"
+  },
+  "devDependencies": {
+    "code": "2.x.x",
+    "coveralls": "2.x.x",
+    "hapi": "13.x.x",
+    "lab": "10.x.x"
+  }
+}
