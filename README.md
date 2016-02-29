@@ -59,7 +59,7 @@ Registers the specified `routes` passed through those transforms specified,
 
   1. by the optional `transforms` argument,
   2. for the current plugin (active realm) via [`server.routeTransforms()`](#serverroutetransformstransforms), and
-  3. for the server root via loveboat's [registration options](#registration-options).
+  3. for the server root via loveboat's [registration options](#plugin-registration).
 
 However, if `onlySpecified` is `true` then only `transforms` will be applied.
 
