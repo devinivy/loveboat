@@ -5,6 +5,7 @@
 const Lab = require('lab');
 const Code = require('code');
 const Joi = require('joi');
+const Topo = require('topo');
 const Hapi = require('hapi');
 const Loveboat = require('..');
 
@@ -28,21 +29,6 @@ describe('Loveboat', () => {
 
             expect(err).to.not.exist();
             expect(server.realm.plugins.loveboat.transforms.nodes).to.have.length(0);
-            done();
-        });
-
-    });
-
-    it('decorates the server.', (done) => {
-
-        const server = new Hapi.Server();
-        server.connection();
-
-        server.register(Loveboat, (err) => {
-
-            expect(err).to.not.exist();
-            expect(server.loveboat).to.be.a.function();
-            expect(server.routeTransforms).to.be.a.function();
             done();
         });
 
@@ -201,54 +187,401 @@ describe('Loveboat', () => {
         });
     });
 
-    it('runs a basic transform.', (done) => {
+    it('throws on invalid transform.', (done) => {
 
-        internals.transformRoutes({
-            name: 'get-to-post',
-            root: 'method',
-            match: Joi.any().valid('get'),
-            handler: (val) => 'post'
-        }, {
-            method: 'get',
-            path: '/',
-            handler: internals.boringHandler
-        }, (server) => {
+        const server = new Hapi.Server();
+        server.connection();
 
-            const table = server.table()[0].table;
+        expect(() => {
 
-            expect(table).to.be.an.array();
-            expect(table).to.have.length(1);
-            expect(table[0].method).to.equal('post');
-            expect(table[0].path).to.equal('/');
+            server.register({
+                register: Loveboat,
+                options: {
+                    transforms: [
+                        {
+                            name: null, // Missing
+                            root: 'a.b.c',
+                            match: Joi.any(),
+                            handler: (val) => val
+                        }
+                    ]
+                }
+            }, (err) => {
 
-            done();
+                done(err || new Error('Shouldn\'t make it here'));
+            });
+
+        }).to.throw(/"name" must be a string/);
+
+        done();
+    });
+
+    describe('transformRoutes() decoration', () => {
+
+        it('exists.', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            server.register(Loveboat, (err) => {
+
+                expect(err).to.not.exist();
+                expect(server.routeTransforms).to.be.a.function();
+                done();
+            });
+        });
+
+        it('registers realm-specific transforms.', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            const plugin = function (srv, options, next) {
+
+                srv.routeTransforms({
+                    name: 'add-one',
+                    root: 'path',
+                    match: Joi.any(),
+                    handler: (path) => path + '1'
+                });
+
+                expect(srv.realm.plugins.loveboat.transforms.nodes).to.have.length(1);
+                expect(srv.realm.plugins.loveboat.transforms.nodes[0].name).to.equal('add-one');
+                expect(srv.root.realm.plugins.loveboat.transforms.nodes).to.have.length(0);
+
+                next();
+            };
+
+            plugin.attributes = { name: 'plugin' };
+
+            server.register([Loveboat, plugin], (err) => {
+
+                expect(err).to.not.exist();
+
+                done();
+            });
         });
 
     });
 
-    it('runs a multi-output transform.', (done) => {
+    describe('loveboat() decoration', () => {
 
-        internals.transformRoutes({
-            name: 'multi-path',
-            root: 'path',
-            match: Joi.array(),
-            handler: (val) => val
-        }, {
-            method: 'get',
-            path: ['/one', '/two'],
-            handler: internals.boringHandler
-        }, (server) => {
+        it('exists.', (done) => {
 
-            const table = server.table()[0].table;
+            const server = new Hapi.Server();
+            server.connection();
 
-            expect(table).to.be.an.array();
-            expect(table).to.have.length(2);
-            expect(table[0].method).to.equal('get');
-            expect(table[0].path).to.equal('/one');
-            expect(table[1].method).to.equal('get');
-            expect(table[1].path).to.equal('/two');
+            server.register(Loveboat, (err) => {
 
-            done();
+                expect(err).to.not.exist();
+
+                done();
+            });
+        });
+
+        it('uses precomputed root-level transforms if no others are specified.', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            server.register({
+                register: Loveboat,
+                options: {
+                    transforms: {
+                        name: 'get-to-post',
+                        root: 'method',
+                        match: Joi.any().valid('get'),
+                        handler: (method) => 'post'
+                    }
+                }
+            }, (err) => {
+
+                expect(err).to.not.exist();
+
+                let addCalls = 0;
+                const origAdd = Topo.prototype.add;
+                Topo.prototype.add = function () {
+
+                    addCalls++;
+                    origAdd.apply(this, arguments);
+                };
+
+                server.loveboat({
+                    method: 'get',
+                    path: '/',
+                    handler: internals.boringHandler
+                });
+
+                expect(addCalls).to.equal(0);
+                Topo.prototype.add = origAdd;
+
+                const table = server.table()[0].table;
+
+                expect(table).to.be.an.array();
+                expect(table).to.have.length(1);
+                expect(table[0].method).to.equal('post');
+                expect(table[0].path).to.equal('/');
+
+                done();
+            });
+        });
+
+        it('uses precomputed realm-level transforms if no others are specified.', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            const plugin = function (srv, options, next) {
+
+                srv.routeTransforms({
+                    name: 'get-to-post',
+                    root: 'method',
+                    match: Joi.any().valid('get'),
+                    handler: (method) => 'post'
+                });
+
+                let addCalls = 0;
+                const origAdd = Topo.prototype.add;
+                Topo.prototype.add = function () {
+
+                    addCalls++;
+                    origAdd.apply(this, arguments);
+                };
+
+                srv.loveboat({
+                    method: 'get',
+                    path: '/',
+                    handler: internals.boringHandler
+                });
+
+                expect(addCalls).to.equal(0);
+                Topo.prototype.add = origAdd;
+
+                const table = srv.table()[0].table;
+
+                expect(table).to.be.an.array();
+                expect(table).to.have.length(1);
+                expect(table[0].method).to.equal('post');
+                expect(table[0].path).to.equal('/');
+
+                next();
+            };
+
+            plugin.attributes = {
+                name: 'plugin'
+            };
+
+            server.register([Loveboat, plugin], (err) => {
+
+                expect(err).to.not.exist();
+
+                done();
+            });
+        });
+
+        it('applies root, realm, and specified transforms.', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            const plugin = function (srv, options, next) {
+
+                srv.routeTransforms({
+                    name: 'post-to-patch',
+                    root: 'method',
+                    match: Joi.any().valid('post'),
+                    handler: (method) => 'patch',
+                    after: ['get-to-post']
+                });
+
+                srv.loveboat({
+                    method: 'get',
+                    path: '/',
+                    handler: internals.boringHandler
+                }, [
+                    {
+                        name: 'patch-to-put',
+                        root: 'method',
+                        match: Joi.any().valid('patch'),
+                        handler: (method) => 'put',
+                        after: ['get-to-post', 'post-to-patch']
+                    }
+                ]);
+
+                const table = srv.table()[0].table;
+
+                expect(table).to.be.an.array();
+                expect(table).to.have.length(1);
+                expect(table[0].method).to.equal('put');
+                expect(table[0].path).to.equal('/');
+
+                next();
+            };
+
+            plugin.attributes = {
+                name: 'plugin'
+            };
+
+            server.register([{
+                register: Loveboat,
+                options: {
+                    transforms: [{
+                        name: 'get-to-post',
+                        root: 'method',
+                        match: Joi.any().valid('get'),
+                        handler: (method) => 'post'
+                    }]
+                }
+            }, plugin], (err) => {
+
+                expect(err).to.not.exist();
+
+                done();
+            });
+        });
+
+        it('applies specified transforms.', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            server.register(Loveboat, (err) => {
+
+                expect(err).to.not.exist();
+
+                server.loveboat({
+                    method: 'get',
+                    path: '/',
+                    handler: internals.boringHandler
+                }, {
+                    name: 'get-to-post',
+                    root: 'method',
+                    match: Joi.any().valid('get'),
+                    handler: (method) => 'post'
+                });
+
+                const table = server.table()[0].table;
+
+                expect(table).to.be.an.array();
+                expect(table).to.have.length(1);
+                expect(table[0].method).to.equal('post');
+                expect(table[0].path).to.equal('/');
+
+                done();
+            });
+        });
+
+        it('applies only specified transforms when using `onlySpecified` option.', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            const plugin = function (srv, options, next) {
+
+                srv.routeTransforms({
+                    name: 'add-two',
+                    root: 'path',
+                    match: Joi.any(),
+                    handler: (path) => path + '2',
+                    after: ['add-one']
+                });
+
+                srv.loveboat({
+                    method: 'get',
+                    path: '/',
+                    handler: internals.boringHandler
+                }, [
+                    {
+                        name: 'add-three',
+                        root: 'path',
+                        match: Joi.any(),
+                        handler: (path) => path + '3',
+                        after: ['add-one', 'add-two']
+                    }
+                ], true);
+
+                const table = srv.table()[0].table;
+
+                expect(table).to.be.an.array();
+                expect(table).to.have.length(1);
+                expect(table[0].method).to.equal('get');
+                expect(table[0].path).to.equal('/3');
+
+                next();
+            };
+
+            plugin.attributes = {
+                name: 'plugin'
+            };
+
+            server.register([{
+                register: Loveboat,
+                options: {
+                    transforms: [{
+                        name: 'add-one',
+                        root: 'path',
+                        match: Joi.any(),
+                        handler: (path) => path + '1'
+                    }]
+                }
+            }, plugin], (err) => {
+
+                expect(err).to.not.exist();
+
+                done();
+            });
+        });
+
+        it('runs a multi-output transform.', (done) => {
+
+            internals.transformRoutes({
+                name: 'multi-path',
+                root: 'path',
+                match: Joi.array(),
+                handler: (val) => val
+            }, {
+                method: 'get',
+                path: ['/one', '/two'],
+                handler: internals.boringHandler
+            }, (server) => {
+
+                const table = server.table()[0].table;
+
+                expect(table).to.be.an.array();
+                expect(table).to.have.length(2);
+                expect(table[0].method).to.equal('get');
+                expect(table[0].path).to.equal('/one');
+                expect(table[1].method).to.equal('get');
+                expect(table[1].path).to.equal('/two');
+
+                done();
+            });
+
+        });
+
+        it('does not touch non-matching routes.', (done) => {
+
+            internals.transformRoutes({
+                name: 'get-to-post',
+                root: 'method',
+                match: Joi.string().valid('get'),
+                handler: (method) => 'post'
+            }, {
+                method: 'patch',
+                path: '/',
+                handler: internals.boringHandler
+            }, (server) => {
+
+                const table = server.table()[0].table;
+
+                expect(table).to.be.an.array();
+                expect(table).to.have.length(1);
+                expect(table[0].method).to.equal('patch');
+                expect(table[0].path).to.equal('/');
+
+                done();
+            });
+
         });
 
     });

@@ -54,7 +54,7 @@ Loveboat is a hapi plugin with the following options,
 ### Decorations
 Loveboat places several decorations on the hapi [Server](https://github.com/hapijs/hapi/blob/master/API.md#server) object.
 
-#### `server.loveboat(routes, [transforms], [onlySpecified])`
+#### `server.loveboat(routes, [transforms, [onlySpecified]])`
 Registers the specified `routes` passed through those transforms specified,
 
   1. by the optional `transforms` argument,
