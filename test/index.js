@@ -24,7 +24,7 @@ describe('Loveboat', () => {
         internals.transformRoutes({
             name: 'get-to-post',
             root: 'method',
-            validate: Joi.any().valid('get'),
+            match: Joi.any().valid('get'),
             handler: (val) => 'post'
         }, {
             method: 'get',
@@ -50,7 +50,7 @@ describe('Loveboat', () => {
         internals.transformRoutes({
             name: 'multi-path',
             root: 'path',
-            validate: Joi.array(),
+            match: Joi.array(),
             handler: (val) => val
         }, {
             method: 'get',
@@ -86,12 +86,12 @@ describe('Loveboat', () => {
                         {
                             name: 'bad-one',
                             root: 'a.b.c',
-                            validate: Joi.any(),
+                            match: Joi.any(),
                             handler: (val) => val
                         }, {
                             name: 'bad-two',
                             root: 'a.b',
-                            validate: Joi.any(),
+                            match: Joi.any(),
                             handler: (val) => val
                         }
                     ]

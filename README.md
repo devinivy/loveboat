@@ -14,27 +14,32 @@ const Loveboat = require('loveboat');
 const server = new Hapi.Server();
 server.connection();
 
-server.register({
-    register: Loveboat,
-    options: {
-      transforms: [{
-        name: 'patch-to-post',
-        root: 'method',
-        validate: Joi.string().valid('patch'),
-        handler: (method) => 'post'
-      }]
-    }
-}, (err) => {
+server.register(Loveboat, (err) => {
 
-  // This route definition will be transformed
-  // to use POST rather than PATCH.
-  server.loveboat({
-    method: 'patch',
-    path: '/',
-    handler: function (request, reply) {
-      reply('lovely');
+  // Register route config transforms to use
+  // specifically for this `server`.
+  server.routeTransforms([{
+    name: 'patch-to-post',
+    root: 'method',
+    match: Joi.string().valid('patch'),
+    handler: (method) => 'post'
+  }]);
+
+  server.loveboat([
+    {
+      method: 'patch',  // This route definition will be transformed
+      path: '/',        // to use POST rather than PATCH.
+      handler: function (request, reply) {
+        reply('love');
+      }
+    }, {
+      method: 'get',    // This route definition will not be transformed
+      path: '/',        // because it doesn't have a matching method.
+      handler: function (request, reply) {
+        reply('boat');
+      }
     }
-  });
+  ]);
 
 });
 ```
@@ -54,7 +59,7 @@ Registers the specified `routes` passed through those transforms specified,
 
   1. by the optional `transforms` argument,
   2. for the current plugin (active realm) via [`server.routeTransforms()`](#serverroutetransformstransforms), and
-  3. for the server root via loveboat's [registration options](#regstration-options).
+  3. for the server root via loveboat's [registration options](#registration-options).
 
 However, if `onlySpecified` is `true` then only `transforms` will be applied.
 
@@ -66,15 +71,15 @@ A transform specifies a piece of hapi a route configuration that it may act on, 
 
   - `name` - (required) a name for this transform.
   - `root` - (required) a string specifying which piece of route configuration this transform acts upon, e.g. `'config.auth.strategies'` (see [`Hoek.reach()`](https://github.com/hapijs/hoek#reachobj-chain-options)).  If the transform acts on the entire route configuration, `null` should be passed.
-  - `validate` - (required) a [Joi](https://github.com/hapijs/joi) schema or a function used to determine if the configuration `root` (as described above) should be acted upon by this transform.  The piece of route configuration at `transform.root` is passed through this validation.
+  - `match` - (required) a [Joi](https://github.com/hapijs/joi) schema or a function used to determine if the configuration `root` (as described above) should be acted upon by this transform.  The piece of route configuration at `transform.root` is passed through this validation.
 
-  When passed as a function `validate` has the signature `function(root, route)` where,
+  When passed as a function `match` has the signature `function(root, route)` where,
    - `root` - the configuration root derived from a route configuration at `transform.root`.
    - `route` - the entire route configuration from which `root` is derived.
 
   The function should return an object having `error` and `value` keys identically to [`Joi.validate()`](https://github.com/hapijs/joi/blob/master/API.md#validatevalue-schema-options-callback).
 
-  - `joi` - a list of [options](https://github.com/hapijs/joi/blob/master/API.md#validatevalue-schema-options-callback) to use with [Joi](https://github.com/hapijs/joi) when `validate` is a Joi schema.
+  - `joi` - a list of [options](https://github.com/hapijs/joi/blob/master/API.md#validatevalue-schema-options-callback) to use with [Joi](https://github.com/hapijs/joi) when `match` is a Joi schema.
   - `handler` - (required) a function that performs a transformation on this transform's `root`.  It has signature `function(root, route)` where,
     - `root` - the configuration root derived from a route configuration at `transform.root`.
     - `route` - the entire route configuration from which `root` is derived.
