@@ -16,30 +16,30 @@ server.connection();
 
 server.register(Loveboat, (err) => {
 
-  // Register route config transforms to use
-  // specifically for this `server`.
-  server.routeTransforms([{
-    name: 'patch-to-post',
-    root: 'method',
-    match: Joi.string().valid('patch'),
-    handler: (method) => 'post'
-  }]);
+    // Register route config transforms to use
+    // specifically for this server.
+    server.routeTransforms([{
+        name: 'patch-to-post',
+        root: 'method',
+        match: Joi.string().valid('patch'),
+        handler: (method) => 'post'
+    }]);
 
-  server.loveboat([
-    {
-      method: 'patch',  // This route definition will be transformed
-      path: '/',        // to use POST rather than PATCH.
-      handler: function (request, reply) {
-        reply('love');
-      }
-    }, {
-      method: 'get',    // This route definition will not be transformed
-      path: '/',        // because it doesn't have a matching method.
-      handler: function (request, reply) {
-        reply('boat');
-      }
-    }
-  ]);
+    server.loveboat([
+        {
+            method: 'patch',  // This route definition will be transformed
+            path: '/',        // to use POST rather than PATCH.
+            handler: function (request, reply) {
+                reply('love');
+            }
+        }, {
+            method: 'get',    // This route definition will not be transformed
+            path: '/',        // because it doesn't have a matching method.
+            handler: function (request, reply) {
+                reply('boat');
+            }
+        }
+    ]);
 
 });
 ```
