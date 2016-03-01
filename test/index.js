@@ -559,25 +559,168 @@ describe('Loveboat', () => {
 
         });
 
-        it('does not touch non-matching routes.', (done) => {
+        it('runs a deep transform, possibly on a key that does not exist.', (done) => {
 
             internals.transformRoutes({
-                name: 'get-to-post',
-                root: 'method',
-                match: Joi.string().valid('get'),
-                handler: (method) => 'post'
+                name: 'set-deep',
+                root: 'config.app.deep',
+                match: Joi.any(),
+                handler: (val) => true
             }, {
-                method: 'patch',
+                method: 'get',
                 path: '/',
-                handler: internals.boringHandler
+                handler: internals.boringHandler,
+                config: {}
             }, (server) => {
 
                 const table = server.table()[0].table;
 
                 expect(table).to.be.an.array();
                 expect(table).to.have.length(1);
-                expect(table[0].method).to.equal('patch');
+                expect(table[0].method).to.equal('get');
                 expect(table[0].path).to.equal('/');
+                expect(table[0].settings.app.deep).to.equal(true);
+
+                done();
+            });
+
+        });
+
+        it('does not touch non-matching routes (using joi schema).', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            server.register({
+                register: Loveboat,
+                options: {
+                    transforms: [{
+                        name: 'get-to-post',
+                        root: 'method',
+                        match: Joi.string().valid('get'),
+                        handler: (method) => 'post'
+                    }]
+                }
+            }, (err) => {
+
+                expect(err).to.not.exist();
+
+                const route = {
+                    method: 'patch',
+                    path: '/',
+                    handler: internals.boringHandler
+                };
+
+                let called = false;
+                const origRoute = server.route;
+                server.route = function (routes) {
+
+                    called = true;
+                    expect(routes).to.be.an.array();
+                    expect(routes).to.have.length(1);
+                    expect(routes[0]).to.equal(route);
+
+                    origRoute.apply(this, arguments);
+                };
+
+                server.loveboat(route);
+                server.route = origRoute;
+
+                expect(called).to.equal(true);
+
+                done();
+            });
+
+        });
+
+        it('does not touch non-matching routes (using validation function).', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            server.register({
+                register: Loveboat,
+                options: {
+                    transforms: [{
+                        name: 'get-to-post',
+                        root: 'method',
+                        match: (rootValue) => ({ error: new Error('Never matches'), value: rootValue }),
+                        handler: (method) => 'post'
+                    }]
+                }
+            }, (err) => {
+
+                expect(err).to.not.exist();
+
+                const route = {
+                    method: 'patch',
+                    path: '/',
+                    handler: internals.boringHandler
+                };
+
+                let called = false;
+                const origRoute = server.route;
+                server.route = function (routes) {
+
+                    called = true;
+                    expect(routes).to.be.an.array();
+                    expect(routes).to.have.length(1);
+                    expect(routes[0]).to.equal(route);
+
+                    origRoute.apply(this, arguments);
+                };
+
+                server.loveboat(route);
+                server.route = origRoute;
+
+                expect(called).to.equal(true);
+
+                done();
+            });
+
+        });
+
+        it('does not touch returned values for entire route config.', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            const returnedRoute = {
+                method: 'get',
+                path: '/',
+                handler: internals.boringHandler
+            };
+
+            server.register({
+                register: Loveboat,
+                options: {
+                    transforms: [{
+                        name: 'entire-config',
+                        root: null,
+                        match: Joi.any(),
+                        handler: (val) => returnedRoute
+                    }]
+                }
+            }, (err) => {
+
+                expect(err).to.not.exist();
+
+                let called = false;
+                const origRoute = server.route;
+                server.route = function (routes) {
+
+                    called = true;
+                    expect(routes).to.be.an.array();
+                    expect(routes).to.have.length(1);
+                    expect(routes[0]).to.equal(returnedRoute);
+
+                    origRoute.apply(this, arguments);
+                };
+
+                server.loveboat('anything');
+                server.route = origRoute;
+
+                expect(called).to.equal(true);
 
                 done();
             });
