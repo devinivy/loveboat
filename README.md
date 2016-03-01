@@ -6,6 +6,10 @@ the hapi route config preprocessor
 
 ## Usage
 
+Loveboat is a system for creating and registering transformations to be applied to hapi route configurations– your route config should be expressive!
+
+Loveboat transforms are defined in such a way that they cannot conflict with each other.  That is, two transformations can only act on the same portion of a route configuration if they explicitly say that they are aware of each other and have a well-defined order in which they act.  So go ahead and transform your route configurations without all the worry!
+
 ```js
 const Hapi = require('hapi');
 const Joi = require('joi');
@@ -17,7 +21,7 @@ server.connection();
 server.register(Loveboat, (err) => {
 
     // Register route config transforms to use
-    // specifically for this server.
+    // specifically for this server (or plugin).
     server.routeTransforms([{
         name: 'patch-to-post',
         root: 'method',
@@ -25,6 +29,7 @@ server.register(Loveboat, (err) => {
         handler: (method) => 'post'
     }]);
 
+    // Transform and register routes!
     server.loveboat([
         {
             method: 'patch',  // This route definition will be transformed
