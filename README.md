@@ -6,10 +6,19 @@ the hapi route config preprocessor
 
 ## Usage
 
-Loveboat is a system for creating and registering transformations to be applied to hapi route configurations– your route config should be expressive!
+Loveboat is a system for creating and registering transformations to be applied to hapi route configurations.  This can be used to make your route configurations more communicative and more expressive!
 
-Loveboat transforms are defined in such a way that they cannot conflict with each other.  That is, two transformations can only act on the same portion of a route configuration if they explicitly say that they are aware of each other and have a well-defined order in which they act.  So go ahead and transform your route configurations without all the worry!
+Imagine the ability to add multiple paths on a single route, define route post-requisites (in addition to pre-requisites), or have your routes give themselves tags based upon other pieces of their definition.
 
+Loveboat transforms are defined in such a way that they cannot conflict with each other.  That is, two transformations can only act on the same portion of a route configuration if they explicitly say that they are aware of each other and have a well-defined order in which they act.  So go ahead and transform your route configurations without worry!
+
+### Community Transforms
+  - [loveboat-paths](https://github.com/devinivy/loveboat-paths) - add support for multiple paths on a single route.
+
+  - [loveboat-postreqs](https://github.com/devinivy/loveboat-postreqs) - add support for route post-requisites.
+
+### Example
+Here's a long-form example using a custom transform,
 ```js
 const Hapi = require('hapi');
 const Joi = require('joi');
