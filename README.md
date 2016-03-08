@@ -63,7 +63,7 @@ server.register(Loveboat, (err) => {
 ### Plugin Registration
 Loveboat is a hapi plugin with the following options,
 
- - `transforms` - a route [transform](#transforms) or list of route transforms to be used with all route registrations via [`server.loveboat()`](#serverloveboatroutes-transforms-onlyspecified).
+ - `transforms` - a route [transform](#transforms) or list of route transforms to be used with route registrations via [`server.loveboat()`](#serverloveboatroutes-transforms-onlyspecified).
 
 ### Decorations
 Loveboat places several decorations on the hapi [Server](https://github.com/hapijs/hapi/blob/master/API.md#server) object.
@@ -94,9 +94,10 @@ A transform specifies a piece of hapi a route configuration that it may act on, 
   The function should return an object having `error` and `value` keys identically to [`Joi.validate()`](https://github.com/hapijs/joi/blob/master/API.md#validatevalue-schema-options-callback).
 
   - `joi` - a list of [options](https://github.com/hapijs/joi/blob/master/API.md#validatevalue-schema-options-callback) to use with [Joi](https://github.com/hapijs/joi) when `match` is a Joi schema.
-  - `handler` - (required) a function that performs a transformation on this transform's `root`.  It has signature `function(root, route)` where,
-    - `root` - the configuration root derived from a route configuration at `transform.root`.
+  - `handler` - (required) a function that performs a transformation on this transform's `root`.  It has signature `function(root, route, server)` where,
+    - `root` - the configuration value derived from a route configuration at `transform.root`.
     - `route` - the entire route configuration from which `root` is derived.
+    - `server` - the server onto which this `route` will be registered (possibly that of a plugin).
 
   The function should not mutate `root` or `route`.  It should return a new value for `root` or list of values for `root`.
 

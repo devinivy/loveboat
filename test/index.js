@@ -4,6 +4,7 @@
 
 const Lab = require('lab');
 const Code = require('code');
+const Hoek = require('hoek');
 const Joi = require('joi');
 const Topo = require('topo');
 const Hapi = require('hapi');
@@ -725,6 +726,112 @@ describe('Loveboat', () => {
                 done();
             });
 
+        });
+
+        it('performs a minimal clone of passed route config.', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            server.register(Loveboat, (err) => {
+
+                expect(err).to.not.exist();
+
+                server.routeTransforms({
+                    name: 'headers-stay',
+                    root: 'config.cors.headers',
+                    match: Joi.array(),
+                    handler: (val) => [val]
+                });
+
+                const writtenRoute = {
+                    method: 'get',
+                    path: '/',
+                    handler: internals.boringHandler,
+                    config: {
+                        cors: { headers: ['one', 'two'] },
+                        app: {}
+                    }
+                };
+
+                const writtenRouteCopy = Hoek.clone(writtenRoute);
+
+                let passedRoute;
+
+                let called = false;
+                const origRoute = server.route;
+                server.route = function (routes) {
+
+                    called = true;
+                    expect(routes).to.be.an.array();
+                    expect(routes).to.have.length(1);
+                    passedRoute = routes[0];
+
+                    origRoute.apply(this, arguments);
+                };
+
+                server.loveboat(writtenRoute);
+                server.route = origRoute;
+
+                expect(called).to.equal(true);
+
+                expect(writtenRouteCopy).to.deep.equal(passedRoute);
+                expect(writtenRoute).to.not.equal(passedRoute);
+                expect(writtenRoute.config).to.not.equal(passedRoute.config);
+                expect(writtenRoute.config.cors).to.not.equal(passedRoute.config.cors);
+                expect(writtenRoute.handler).to.equal(passedRoute.handler);
+                expect(writtenRoute.config.app).to.equal(passedRoute.config.app);
+
+                done();
+            });
+        });
+
+        it('passes (root, route, server) to transform handlers.', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            const plugin = function (srv, options, next) {
+
+                const writtenRoute = {
+                    method: 'post',
+                    path: '/',
+                    handler: internals.boringHandler
+                };
+
+                let called = false;
+
+                srv.routeTransforms({
+                    name: 'post-to-patch',
+                    root: 'method',
+                    match: Joi.any().valid('post'),
+                    handler: (root, route, theServer) => {
+
+                        called = true;
+                        expect(root).to.equal('post');
+                        expect(route).to.equal(writtenRoute);
+                        expect(theServer).to.equal(srv);
+                        return 'patch';
+                    }
+                });
+
+                srv.loveboat(writtenRoute);
+
+                expect(called).to.equal(true);
+
+                next();
+            };
+
+            plugin.attributes = {
+                name: 'plugin'
+            };
+
+            server.register([Loveboat, plugin], (err) => {
+
+                expect(err).to.not.exist();
+
+                done();
+            });
         });
 
     });
