@@ -48,7 +48,7 @@ describe('Loveboat', () => {
                     root: null,
                     match: Joi.any(),
                     handler: (val) => val,
-                    before: ['second']
+                    options: { before: ['second'] }
                 }]
             }
         }, (err) => {
@@ -158,25 +158,25 @@ describe('Loveboat', () => {
                         root: null,
                         match: Joi.any(),
                         handler: (val) => val,
-                        before: ['four']
+                        options: { before: ['four'] }
                     }, {
                         name: 'two',
                         root: null,
                         match: Joi.any(),
                         handler: (val) => val,
-                        after: ['one', 'three']
+                        options: { after: ['one', 'three'] }
                     }, {
                         name: 'three',
                         root: null,
                         match: Joi.any(),
                         handler: (val) => val,
-                        before: ['one']
+                        options: { before: ['one'] }
                     }, {
                         name: 'four',
                         root: null,
                         match: Joi.any(),
                         handler: (val) => val,
-                        after: ['two', 'three']
+                        options: { after: ['two', 'three'] }
                     }
                 ]
             }
@@ -392,7 +392,7 @@ describe('Loveboat', () => {
                     root: 'method',
                     match: Joi.any().valid('post'),
                     handler: (method) => 'patch',
-                    after: ['get-to-post']
+                    options: { after: ['get-to-post'] }
                 });
 
                 srv.loveboat({
@@ -405,7 +405,7 @@ describe('Loveboat', () => {
                         root: 'method',
                         match: Joi.any().valid('patch'),
                         handler: (method) => 'put',
-                        after: ['get-to-post', 'post-to-patch']
+                        options: { after: ['get-to-post', 'post-to-patch'] }
                     }
                 ]);
 
@@ -484,7 +484,7 @@ describe('Loveboat', () => {
                     root: 'path',
                     match: Joi.any(),
                     handler: (path) => path + '2',
-                    after: ['add-one']
+                    options: { after: ['add-one'] }
                 });
 
                 srv.loveboat({
@@ -497,7 +497,7 @@ describe('Loveboat', () => {
                         root: 'path',
                         match: Joi.any(),
                         handler: (path) => path + '3',
-                        after: ['add-one', 'add-two']
+                        options: { after: ['add-one', 'add-two'] }
                     }
                 ], true);
 
@@ -834,6 +834,66 @@ describe('Loveboat', () => {
             });
         });
 
+        it('passes options to the transform.', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            const plugin = function (srv, options, next) {
+
+                srv.routeTransforms({
+                    name: 'post-to-patch',
+                    root: 'method',
+                    match: Joi.any().valid('post'),
+                    options: { after: ['get-to-post'] },
+                    handler: (method) => 'patch'
+                });
+
+                srv.loveboat({
+                    method: 'get',
+                    path: '/',
+                    handler: internals.boringHandler
+                }, [
+                    {
+                        name: 'patch-to-put',
+                        root: 'method',
+                        match: Joi.any().valid('patch'),
+                        options: { after: ['get-to-post', 'post-to-patch'] },
+                        handler: (method) => 'put'
+                    }
+                ]);
+
+                const table = srv.table()[0].table;
+
+                expect(table).to.be.an.array();
+                expect(table).to.have.length(1);
+                expect(table[0].method).to.equal('put');
+                expect(table[0].path).to.equal('/');
+
+                next();
+            };
+
+            plugin.attributes = {
+                name: 'plugin'
+            };
+
+            server.register([{
+                register: Loveboat,
+                options: {
+                    transforms: [{
+                        name: 'get-to-post',
+                        root: 'method',
+                        match: Joi.any().valid('get'),
+                        handler: (method) => 'post'
+                    }]
+                }
+            }, plugin], (err) => {
+
+                expect(err).to.not.exist();
+
+                done();
+            });
+        });
     });
 });
 
