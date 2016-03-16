@@ -105,9 +105,42 @@ describe('Loveboat', () => {
                 done(err || new Error('Shouldn\'t make it here'));
             });
 
-        }).to.throw('bad-two conflicts with bad-one');
+        }).to.throw('Loveboat transform bad-two conflicts with bad-one at a.b.');
 
         done();
+    });
+
+    it('does not throw on similarly tailed roots.', (done) => {
+
+        const server = new Hapi.Server();
+        server.connection();
+
+        expect(() => {
+
+            server.register({
+                register: Loveboat,
+                options: {
+                    transforms: [
+                        {
+                            name: 'bad-one',
+                            root: 'a.hot',
+                            match: Joi.any(),
+                            handler: (val) => val
+                        }, {
+                            name: 'bad-two',
+                            root: 'a.hotdog',
+                            match: Joi.any(),
+                            handler: (val) => val
+                        }
+                    ]
+                }
+            }, (err) => {
+
+                done(err);
+            });
+
+        }).to.not.throw();
+
     });
 
     it('throws on conflicting consumed properties.', (done) => {
@@ -141,7 +174,7 @@ describe('Loveboat', () => {
                 done(err || new Error('Shouldn\'t make it here'));
             });
 
-        }).to.throw('bad-two conflicts with bad-one');
+        }).to.throw('Loveboat transform bad-two conflicts with bad-one at x.y.');
 
         done();
     });
@@ -177,7 +210,7 @@ describe('Loveboat', () => {
                 done(err || new Error('Shouldn\'t make it here'));
             });
 
-        }).to.throw('bad-two conflicts with bad-one');
+        }).to.throw('Loveboat transform bad-two conflicts with bad-one at a.b.');
 
         done();
     });
@@ -211,7 +244,7 @@ describe('Loveboat', () => {
                 done(err || new Error('Shouldn\'t make it here'));
             });
 
-        }).to.throw('bad-two conflicts with bad-one');
+        }).to.throw('Loveboat transform bad-two conflicts with bad-one at the root.');
 
         done();
     });
