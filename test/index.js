@@ -157,13 +157,13 @@ describe('Loveboat', () => {
                         {
                             name: 'bad-one',
                             root: 'a.b.c',
-                            consumes: ['x.y.z'],
+                            consume: ['x.y.z'],
                             match: Joi.any(),
                             handler: (val) => val
                         }, {
                             name: 'bad-two',
                             root: 'a.b.d',
-                            consumes: ['x.y'],
+                            consume: ['x.y'],
                             match: Joi.any(),
                             handler: (val) => val
                         }
@@ -193,13 +193,13 @@ describe('Loveboat', () => {
                         {
                             name: 'bad-one',
                             root: 'a.b.c',
-                            consumes: ['x.y.z'],
+                            consume: ['x.y.z'],
                             match: Joi.any(),
                             handler: (val) => val
                         }, {
                             name: 'bad-two',
                             root: 'a.d',
-                            consumes: ['a.b'],
+                            consume: ['a.b'],
                             match: Joi.any(),
                             handler: (val) => val
                         }
@@ -864,7 +864,7 @@ describe('Loveboat', () => {
                         name: 'get-to-x',
                         root: 'method',
                         match: Joi.string().valid('get'),
-                        consumes: ['config.newMethod', 'not.exists'],
+                        consume: ['config.newMethod', 'not.exists'],
                         handler: (method, route) => route.config.newMethod
                     }]
                 }
