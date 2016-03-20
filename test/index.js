@@ -247,7 +247,7 @@ describe('Loveboat', () => {
                 });
 
                 expect(srv.realm.plugins.loveboat.transforms.nodes).to.have.length(1);
-                expect(srv.realm.plugins.loveboat.transforms.nodes[0].name).to.equal('add-one');
+                expect(srv.realm.plugins.loveboat.transforms.nodes[0].transform.name).to.equal('add-one');
                 expect(srv.root.realm.plugins.loveboat.transforms.nodes).to.have.length(0);
 
                 next();
