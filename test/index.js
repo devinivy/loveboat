@@ -867,7 +867,7 @@ describe('Loveboat', () => {
 
                 let called = false;
 
-                srv.routeTransforms({
+                const writtenTransform = {
                     transform: {
                         name: 'post-to-patch',
                         root: 'method',
@@ -878,6 +878,7 @@ describe('Loveboat', () => {
                             expect(root).to.equal('post');
                             expect(route).to.equal(writtenRoute);
                             expect(theServer).to.equal(srv);
+                            expect(transOptions).to.equal(writtenTransform.options);
                             expect(transOptions.pizza).to.equal('delicious');
                             return 'patch';
                         }
@@ -885,7 +886,9 @@ describe('Loveboat', () => {
                     options: {
                         pizza: 'delicious'
                     }
-                });
+                };
+
+                srv.routeTransforms(writtenTransform);
 
                 srv.loveboat(writtenRoute);
 
