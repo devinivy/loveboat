@@ -304,12 +304,12 @@ describe('Loveboat', () => {
                 transforms: [
                     {
                         transform: {
-                            name: 'post-to-patch',
+                            name: 'put-to-delete',
                             root: 'method',
-                            match: Joi.any().valid('post'),
-                            handler: (method) => 'patch'
+                            match: Joi.any().valid('put'),
+                            handler: (method) => 'delete'
                         },
-                        before: ['put-to-delete']
+                        after: ['patch-to-put']
                     }, {
                         transform: {
                             name: 'patch-to-put',
@@ -321,21 +321,21 @@ describe('Loveboat', () => {
                         after: ['post-to-patch']
                     }, {
                         transform: {
+                            name: 'post-to-patch',
+                            root: 'method',
+                            match: Joi.any().valid('post'),
+                            handler: (method) => 'patch'
+                        },
+                        before: ['put-to-delete']
+                    }, {
+                        transform: {
                             name: 'get-to-post',
                             root: 'method',
                             match: Joi.any().valid('get'),
                             handler: (method) => 'post',
                             before: ['post-to-patch']
-                        }
-                    }, {
-                        transform: {
-                            name: 'put-to-delete',
-                            root: 'method',
-                            match: Joi.any().valid('put'),
-                            handler: (method) => 'delete',
-                            after: ['get-to-post']
                         },
-                        after: ['patch-to-put']
+                        before: ['put-to-delete']
                     }
                 ]
             }
