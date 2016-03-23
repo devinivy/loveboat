@@ -94,6 +94,7 @@ A transform specifies a piece of hapi a route configuration that it may act on, 
   The function should return an object having `error` and `value` keys identically to [`Joi.validate()`](https://github.com/hapijs/joi/blob/master/API.md#validatevalue-schema-options-callback).
 
   - `joi` - a list of [options](https://github.com/hapijs/joi/blob/master/API.md#validatevalue-schema-options-callback) to use with [Joi](https://github.com/hapijs/joi) when `match` is a Joi schema.
+  - `consume` - a string or array of strings specifying pieces of route configuration that are consumed by this transform (see [`Hoek.reach()`](https://github.com/hapijs/hoek#reachobj-chain-options)).  The listed paths are safely removed from the route definition prior to registering the route.  This should be utilized when the transform would like to extend the hapi route config API with properties that do not otherwise exist.
   - `handler` - (required) a function that performs a transformation on this transform's `root`.  It has signature `function(root, route, server)` where,
     - `root` - the configuration value derived from a route configuration at `transform.root`.
     - `route` - the entire route configuration from which `root` is derived.
@@ -101,7 +102,7 @@ A transform specifies a piece of hapi a route configuration that it may act on, 
 
   The function should not mutate `root` or `route`.  It should return a new value for `root` or list of values for `root`.
 
-  If a list (array) is returned, then each item represents a value for `root` in a new route configuration deep-copied from `route`.  In that case, one route configuration would pass through the transform and multiple route configurations would result with different values at `transform.root`.
+  If a list (array) is returned, then each item represents a value for `root` in a new route configuration minimally-deep-cloned from `route`.  In that case, one route configuration would pass through the transform and multiple route configurations would result with different values at `transform.root`.
 
   - `before` - a name or list of transform names before which this transform should be applied.
   - `after` - a name or list of transform names after which this transform should be applied.

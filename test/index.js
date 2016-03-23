@@ -105,7 +105,112 @@ describe('Loveboat', () => {
                 done(err || new Error('Shouldn\'t make it here'));
             });
 
-        }).to.throw('bad-two conflicts with root of bad-one');
+        }).to.throw('Loveboat transform bad-two conflicts with bad-one at a.b.');
+
+        done();
+    });
+
+    it('does not throw on similarly tailed roots.', (done) => {
+
+        const server = new Hapi.Server();
+        server.connection();
+
+        expect(() => {
+
+            server.register({
+                register: Loveboat,
+                options: {
+                    transforms: [
+                        {
+                            name: 'bad-one',
+                            root: 'a.hot',
+                            match: Joi.any(),
+                            handler: (val) => val
+                        }, {
+                            name: 'bad-two',
+                            root: 'a.hotdog',
+                            match: Joi.any(),
+                            handler: (val) => val
+                        }
+                    ]
+                }
+            }, (err) => {
+
+                done(err);
+            });
+
+        }).to.not.throw();
+
+    });
+
+    it('throws on conflicting consumed properties.', (done) => {
+
+        const server = new Hapi.Server();
+        server.connection();
+
+        expect(() => {
+
+            server.register({
+                register: Loveboat,
+                options: {
+                    transforms: [
+                        {
+                            name: 'bad-one',
+                            root: 'a.b.c',
+                            consume: ['x.y.z'],
+                            match: Joi.any(),
+                            handler: (val) => val
+                        }, {
+                            name: 'bad-two',
+                            root: 'a.b.d',
+                            consume: ['x.y'],
+                            match: Joi.any(),
+                            handler: (val) => val
+                        }
+                    ]
+                }
+            }, (err) => {
+
+                done(err || new Error('Shouldn\'t make it here'));
+            });
+
+        }).to.throw('Loveboat transform bad-two conflicts with bad-one at x.y.');
+
+        done();
+    });
+
+    it('throws on conflicting consumed property and root.', (done) => {
+
+        const server = new Hapi.Server();
+        server.connection();
+
+        expect(() => {
+
+            server.register({
+                register: Loveboat,
+                options: {
+                    transforms: [
+                        {
+                            name: 'bad-one',
+                            root: 'a.b.c',
+                            consume: ['x.y.z'],
+                            match: Joi.any(),
+                            handler: (val) => val
+                        }, {
+                            name: 'bad-two',
+                            root: 'a.d',
+                            consume: ['a.b'],
+                            match: Joi.any(),
+                            handler: (val) => val
+                        }
+                    ]
+                }
+            }, (err) => {
+
+                done(err || new Error('Shouldn\'t make it here'));
+            });
+
+        }).to.throw('Loveboat transform bad-two conflicts with bad-one at a.b.');
 
         done();
     });
@@ -139,7 +244,7 @@ describe('Loveboat', () => {
                 done(err || new Error('Shouldn\'t make it here'));
             });
 
-        }).to.throw('bad-two conflicts with root of bad-one');
+        }).to.throw('Loveboat transform bad-two conflicts with bad-one at the root.');
 
         done();
     });
@@ -733,6 +838,59 @@ describe('Loveboat', () => {
                     expect(routes).to.be.an.array();
                     expect(routes).to.have.length(1);
                     expect(routes[0]).to.equal(route);
+
+                    origRoute.apply(this, arguments);
+                };
+
+                server.loveboat(route);
+                server.route = origRoute;
+
+                expect(called).to.equal(true);
+
+                done();
+            });
+
+        });
+
+        it('consumes values off of route definition.', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+
+            server.register({
+                register: Loveboat,
+                options: {
+                    transforms: [{
+                        name: 'get-to-x',
+                        root: 'method',
+                        match: Joi.string().valid('get'),
+                        consume: ['config.newMethod', 'not.exists'],
+                        handler: (method, route) => route.config.newMethod
+                    }]
+                }
+            }, (err) => {
+
+                expect(err).to.not.exist();
+
+                const route = {
+                    method: 'get',
+                    path: '/',
+                    handler: internals.boringHandler,
+                    config: { newMethod: 'put' }
+                };
+
+                let called = false;
+                const origRoute = server.route;
+                server.route = function (routes) {
+
+                    called = true;
+                    expect(routes).to.be.an.array();
+                    expect(routes).to.have.length(1);
+                    expect(routes[0].method).to.equal('put');
+                    expect(routes[0].path).to.equal('/');
+                    expect(routes[0]).to.not.equal(route);
+                    expect(routes[0].config).to.not.equal(route.config);
+                    expect(routes[0].config.newMethod).to.be.undefined();
 
                     origRoute.apply(this, arguments);
                 };
