@@ -188,6 +188,72 @@ describe('Loveboat', () => {
         });
     });
 
+    it('respects transform consumer precedence rules in conjunction with transform author precedence rules.', (done) => {
+
+        const server = new Hapi.Server();
+        server.connection();
+
+        server.register({
+            register: Loveboat,
+            options: {
+                transforms: [
+                    {
+                        transform: {
+                            name: 'post-to-patch',
+                            root: 'method',
+                            match: Joi.any().valid('post'),
+                            handler: (method) => 'patch'
+                        },
+                        before: ['put-to-delete']
+                    }, {
+                        transform: {
+                            name: 'patch-to-put',
+                            root: 'method',
+                            match: Joi.any().valid('patch'),
+                            handler: (method) => 'put',
+                            after: ['get-to-post']
+                        },
+                        after: ['post-to-patch']
+                    }, {
+                        transform: {
+                            name: 'get-to-post',
+                            root: 'method',
+                            match: Joi.any().valid('get'),
+                            handler: (method) => 'post',
+                            before: ['post-to-patch']
+                        }
+                    }, {
+                        transform: {
+                            name: 'put-to-delete',
+                            root: 'method',
+                            match: Joi.any().valid('put'),
+                            handler: (method) => 'delete',
+                            after: ['get-to-post']
+                        },
+                        after: ['patch-to-put']
+                    }
+                ]
+            }
+        }, (err) => {
+
+            expect(err).to.not.exist();
+
+            server.loveboat({
+                method: 'get',
+                path: '/',
+                handler: internals.boringHandler
+            });
+
+            const table = server.table()[0].table;
+            expect(table).to.be.an.array();
+            expect(table).to.have.length(1);
+            expect(table[0].method).to.equal('delete');
+            expect(table[0].path).to.equal('/');
+
+            done();
+        });
+    });
+
     it('throws on invalid transform.', (done) => {
 
         const server = new Hapi.Server();
@@ -247,7 +313,7 @@ describe('Loveboat', () => {
                 });
 
                 expect(srv.realm.plugins.loveboat.transforms.nodes).to.have.length(1);
-                expect(srv.realm.plugins.loveboat.transforms.nodes[0].name).to.equal('add-one');
+                expect(srv.realm.plugins.loveboat.transforms.nodes[0].transform.name).to.equal('add-one');
                 expect(srv.root.realm.plugins.loveboat.transforms.nodes).to.have.length(0);
 
                 next();
@@ -786,7 +852,7 @@ describe('Loveboat', () => {
             });
         });
 
-        it('passes (root, route, server) to transform handlers.', (done) => {
+        it('passes (root, route, server, options) to transform handlers.', (done) => {
 
             const server = new Hapi.Server();
             server.connection();
@@ -801,19 +867,28 @@ describe('Loveboat', () => {
 
                 let called = false;
 
-                srv.routeTransforms({
-                    name: 'post-to-patch',
-                    root: 'method',
-                    match: Joi.any().valid('post'),
-                    handler: (root, route, theServer) => {
+                const writtenTransform = {
+                    transform: {
+                        name: 'post-to-patch',
+                        root: 'method',
+                        match: Joi.any().valid('post'),
+                        handler: (root, route, theServer, transOptions) => {
 
-                        called = true;
-                        expect(root).to.equal('post');
-                        expect(route).to.equal(writtenRoute);
-                        expect(theServer).to.equal(srv);
-                        return 'patch';
+                            called = true;
+                            expect(root).to.equal('post');
+                            expect(route).to.equal(writtenRoute);
+                            expect(theServer).to.equal(srv);
+                            expect(transOptions).to.equal(writtenTransform.options);
+                            expect(transOptions.pizza).to.equal('delicious');
+                            return 'patch';
+                        }
+                    },
+                    options: {
+                        pizza: 'delicious'
                     }
-                });
+                };
+
+                srv.routeTransforms(writtenTransform);
 
                 srv.loveboat(writtenRoute);
 
@@ -833,7 +908,6 @@ describe('Loveboat', () => {
                 done();
             });
         });
-
     });
 });
 
