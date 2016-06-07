@@ -13,6 +13,8 @@ Imagine the ability to add multiple paths on a single route, define route post-r
 Loveboat transforms are defined in such a way that they cannot conflict with each other.  That is, two transformations can only act on the same portion of a route configuration if they explicitly say that they are aware of each other and have a well-defined order in which they act.  So go ahead and transform your route configurations without worry!
 
 ### Community Transforms
+  - [loveboat-defaults](https://github.com/devinivy/loveboat-defaults) - add support for per-plugin route defaults.
+
   - [loveboat-nested-scopes](https://github.com/devinivy/loveboat-nested-scopes) - add support for hierarchical auth scopes.
 
   - [loveboat-paths](https://github.com/devinivy/loveboat-paths) - add support for multiple paths on a single route.
