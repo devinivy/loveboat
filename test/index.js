@@ -790,7 +790,7 @@ describe('Loveboat', () => {
                     called = true;
                     expect(routes).to.be.an.array();
                     expect(routes).to.have.length(1);
-                    expect(routes[0]).to.equal(route);
+                    expect(routes[0]).to.shallow.equal(route);
 
                     origRoute.apply(this, arguments);
                 };
@@ -837,7 +837,7 @@ describe('Loveboat', () => {
                     called = true;
                     expect(routes).to.be.an.array();
                     expect(routes).to.have.length(1);
-                    expect(routes[0]).to.equal(route);
+                    expect(routes[0]).to.shallow.equal(route);
 
                     origRoute.apply(this, arguments);
                 };
@@ -888,8 +888,8 @@ describe('Loveboat', () => {
                     expect(routes).to.have.length(1);
                     expect(routes[0].method).to.equal('put');
                     expect(routes[0].path).to.equal('/');
-                    expect(routes[0]).to.not.equal(route);
-                    expect(routes[0].config).to.not.equal(route.config);
+                    expect(routes[0]).to.not.shallow.equal(route);
+                    expect(routes[0].config).to.not.shallow.equal(route.config);
                     expect(routes[0].config.newMethod).to.be.undefined();
 
                     origRoute.apply(this, arguments);
@@ -937,7 +937,7 @@ describe('Loveboat', () => {
                     called = true;
                     expect(routes).to.be.an.array();
                     expect(routes).to.have.length(1);
-                    expect(routes[0]).to.equal(returnedRoute);
+                    expect(routes[0]).to.shallow.equal(returnedRoute);
 
                     origRoute.apply(this, arguments);
                 };
@@ -999,12 +999,12 @@ describe('Loveboat', () => {
 
                 expect(called).to.equal(true);
 
-                expect(writtenRouteCopy).to.deep.equal(passedRoute);
-                expect(writtenRoute).to.not.equal(passedRoute);
-                expect(writtenRoute.config).to.not.equal(passedRoute.config);
-                expect(writtenRoute.config.cors).to.not.equal(passedRoute.config.cors);
-                expect(writtenRoute.handler).to.equal(passedRoute.handler);
-                expect(writtenRoute.config.app).to.equal(passedRoute.config.app);
+                expect(writtenRouteCopy).to.equal(passedRoute);
+                expect(writtenRoute).to.not.shallow.equal(passedRoute);
+                expect(writtenRoute.config).to.not.shallow.equal(passedRoute.config);
+                expect(writtenRoute.config.cors).to.not.shallow.equal(passedRoute.config.cors);
+                expect(writtenRoute.handler).to.shallow.equal(passedRoute.handler);
+                expect(writtenRoute.config.app).to.shallow.equal(passedRoute.config.app);
 
                 done();
             });
@@ -1034,9 +1034,9 @@ describe('Loveboat', () => {
 
                             called = true;
                             expect(root).to.equal('post');
-                            expect(route).to.equal(writtenRoute);
-                            expect(theServer).to.equal(srv);
-                            expect(transOptions).to.equal(writtenTransform.options);
+                            expect(route).to.shallow.equal(writtenRoute);
+                            expect(theServer).to.shallow.equal(srv);
+                            expect(transOptions).to.shallow.equal(writtenTransform.options);
                             expect(transOptions.pizza).to.equal('delicious');
                             return 'patch';
                         }

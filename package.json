@@ -30,16 +30,16 @@
   "homepage": "https://github.com/devinivy/loveboat#readme",
   "dependencies": {
     "hoek": "4.x.x",
-    "joi": "9.x.x",
+    "joi": "10.x.x",
     "topo": "2.x.x"
   },
   "peerDependencies": {
-    "hapi": ">=10 <16"
+    "hapi": ">=10 <17"
   },
   "devDependencies": {
-    "code": "2.x.x",
+    "code": "4.x.x",
     "coveralls": "2.x.x",
-    "hapi": "15.x.x",
+    "hapi": "16.x.x",
     "lab": "11.x.x"
   }
 }
